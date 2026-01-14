@@ -10,7 +10,11 @@
     loadSession,
     clearSession,
     hasSession,
-    getSessionSummary
+    getSessionSummary,
+    isElectron,
+    onFileOpened,
+    onMenuCommand,
+    readFileFromPath
   } from '@rsvp/core';
   import RSVPDisplay from './lib/components/RSVPDisplay.svelte';
   import Controls from './lib/components/Controls.svelte';
@@ -260,6 +264,94 @@
     progress = (currentWordIndex / words.length) * 100;
   }
 
+  // Electron: Handle file opened from Finder/dock
+  async function handleElectronFile(filePath) {
+    isLoadingFile = true;
+    loadingMessage = `Loading file...`;
+
+    try {
+      const file = await readFileFromPath(filePath);
+      if (file) {
+        text = await parseFile(file);
+        stop();
+        parseText();
+        showTextInput = false;
+        loadingMessage = '';
+      }
+    } catch (error) {
+      console.error('Error loading file:', error);
+      loadingMessage = `Error: ${error.message}`;
+      setTimeout(() => { loadingMessage = ''; }, 3000);
+    } finally {
+      isLoadingFile = false;
+    }
+  }
+
+  // Electron: Handle menu commands
+  function handleMenuCommandEvent(command) {
+    switch (command) {
+      case 'open':
+        showTextInput = true;
+        showSettings = false;
+        showJumpTo = false;
+        break;
+      case 'save':
+        saveCurrentSession();
+        break;
+      case 'preferences':
+        showSettings = true;
+        showTextInput = false;
+        showJumpTo = false;
+        break;
+      case 'toggle-play':
+        if (isPlaying) pause();
+        else if (isPaused) resume();
+        else start();
+        break;
+      case 'stop':
+        stop();
+        break;
+      case 'speed-up':
+        wordsPerMinute = Math.min(1000, wordsPerMinute + 25);
+        break;
+      case 'speed-down':
+        wordsPerMinute = Math.max(50, wordsPerMinute - 25);
+        break;
+      case 'jump-forward':
+        if (currentWordIndex < words.length) {
+          progress = ((currentWordIndex + 1) / words.length) * 100;
+          currentWordIndex++;
+        }
+        break;
+      case 'jump-backward':
+        if (currentWordIndex > 1) {
+          currentWordIndex = Math.max(0, currentWordIndex - 2);
+          progress = (currentWordIndex / words.length) * 100;
+        }
+        break;
+      case 'jump-to':
+        showJumpTo = !showJumpTo;
+        break;
+      case 'focus-mode':
+        // Toggle focus mode by starting/stopping
+        if (isFocusMode) {
+          isPlaying = false;
+          isPaused = false;
+          if (intervalId) {
+            clearTimeout(intervalId);
+            intervalId = null;
+          }
+        } else {
+          start();
+        }
+        break;
+      case 'show-shortcuts':
+        // Could show a help modal in the future
+        console.log('Shortcuts: Space=Play, ↑↓=Speed, ←→=Skip, G=Jump, Ctrl+S=Save');
+        break;
+    }
+  }
+
   function handleKeydown(e) {
     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
 
@@ -326,6 +418,10 @@
     }
   }
 
+  // Electron IPC cleanup functions
+  let unsubscribeFileOpened = null;
+  let unsubscribeMenuCommand = null;
+
   onMount(() => {
     parseText();
     window.addEventListener('keydown', handleKeydown);
@@ -337,12 +433,22 @@
         showSavedSessionPrompt = true;
       }
     }
+
+    // Set up Electron IPC listeners
+    if (isElectron()) {
+      unsubscribeFileOpened = onFileOpened(handleElectronFile);
+      unsubscribeMenuCommand = onMenuCommand(handleMenuCommandEvent);
+    }
   });
 
   onDestroy(() => {
     if (intervalId) clearTimeout(intervalId);
     if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
     window.removeEventListener('keydown', handleKeydown);
+
+    // Clean up Electron IPC listeners
+    if (unsubscribeFileOpened) unsubscribeFileOpened();
+    if (unsubscribeMenuCommand) unsubscribeMenuCommand();
   });
 </script>
 

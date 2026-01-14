@@ -10,8 +10,15 @@
 export async function parsePDF(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist')
 
-  // Set up the worker - use unpkg which mirrors npm directly
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+  // Set up the worker - use local bundle in Electron for offline support, CDN for web
+  const isElectron = typeof window !== 'undefined' && (window as { electronAPI?: unknown }).electronAPI
+  if (isElectron) {
+    // Use locally bundled worker for offline Electron app
+    pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf-worker/pdf.worker.min.mjs'
+  } else {
+    // Use unpkg CDN for web - mirrors npm directly
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+  }
 
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise

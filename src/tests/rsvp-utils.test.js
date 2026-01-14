@@ -6,7 +6,8 @@ import {
   getWordDelay,
   formatTimeRemaining,
   splitWordForDisplay,
-  shouldPauseAtWord
+  shouldPauseAtWord,
+  extractWordFrame
 } from '../lib/rsvp-utils.js'
 
 describe('parseText', () => {
@@ -227,5 +228,63 @@ describe('shouldPauseAtWord', () => {
   it('should work with different interval values', () => {
     expect(shouldPauseAtWord(5, 5)).toBe(true)
     expect(shouldPauseAtWord(25, 25)).toBe(true)
+  })
+})
+
+describe('extractWordFrame', () => {
+  const words = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+  it('should extract a centered frame of words', () => {
+    const result = extractWordFrame(words, 5, 5)
+    expect(result.subset).toEqual(['four', 'five', 'six', 'seven', 'eight'])
+    expect(result.centerOffset).toBe(2)
+  })
+
+  it('should handle frame at the beginning', () => {
+    const result = extractWordFrame(words, 1, 5)
+    expect(result.subset).toEqual(['one', 'two', 'three', 'four'])
+    expect(result.centerOffset).toBe(1)
+  })
+
+  it('should handle frame at the end', () => {
+    const result = extractWordFrame(words, 8, 5)
+    expect(result.subset).toEqual(['seven', 'eight', 'nine', 'ten'])
+    expect(result.centerOffset).toBe(2)
+  })
+
+  it('should handle frame size of 1', () => {
+    const result = extractWordFrame(words, 5, 1)
+    expect(result.subset).toEqual(['six'])
+    expect(result.centerOffset).toBe(0)
+  })
+
+  it('should handle center index beyond array length', () => {
+    const result = extractWordFrame(words, 15, 5)
+    expect(result.subset).toEqual([''])
+    expect(result.centerOffset).toBe(0)
+  })
+
+  it('should handle even frame sizes', () => {
+    const result = extractWordFrame(words, 5, 4)
+    expect(result.subset).toEqual(['four', 'five', 'six', 'seven', 'eight'])
+    expect(result.centerOffset).toBe(2)
+  })
+
+  it('should handle large frame sizes', () => {
+    const result = extractWordFrame(words, 3, 20)
+    expect(result.subset).toEqual(words)
+    expect(result.centerOffset).toBe(3)
+  })
+
+  it('should handle first word', () => {
+    const result = extractWordFrame(words, 0, 5)
+    expect(result.subset).toEqual(['one', 'two', 'three'])
+    expect(result.centerOffset).toBe(0)
+  })
+
+  it('should handle last word', () => {
+    const result = extractWordFrame(words, 9, 5)
+    expect(result.subset).toEqual(['eight', 'nine', 'ten'])
+    expect(result.centerOffset).toBe(2)
   })
 })

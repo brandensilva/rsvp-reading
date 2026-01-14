@@ -2,14 +2,27 @@
   import { getActualORPIndex } from '../rsvp-utils.js';
 
   export let word = '';
+  export let wordGroup = [];
+  export let highlightIndex = 0;
   export let opacity = 1;
   export let fadeDuration = 150;
   export let fadeEnabled = true;
+  export let multiWordEnabled = false;
 
-  $: orpIndex = getActualORPIndex(word);
-  $: beforeOrp = word ? word.slice(0, orpIndex) : '';
-  $: orpLetter = word ? (word[orpIndex] || '') : '';
-  $: afterOrp = word ? word.slice(orpIndex + 1) : '';
+  $: useMultiMode = multiWordEnabled && wordGroup.length > 0;
+
+  // Get the current word (either from single mode or the highlighted word in group)
+  $: currentWord = useMultiMode ? (wordGroup[highlightIndex] || '') : word;
+
+  // Always calculate ORP for the current word
+  $: orpIdx = currentWord ? getActualORPIndex(currentWord) : -1;
+  $: wordPrefix = currentWord ? currentWord.slice(0, orpIdx) : '';
+  $: focusChar = currentWord ? (currentWord[orpIdx] || '') : '';
+  $: wordSuffix = currentWord ? currentWord.slice(orpIdx + 1) : '';
+
+  // Words before and after the highlighted word (for multi-word mode)
+  $: wordsBefore = useMultiMode ? wordGroup.slice(0, highlightIndex) : [];
+  $: wordsAfter = useMultiMode ? wordGroup.slice(highlightIndex + 1) : [];
 </script>
 
 <div class="rsvp-display">
@@ -20,15 +33,26 @@
 
   <div
     class="word-container"
+    class:multi-mode={useMultiMode}
     style="opacity: {opacity}; transition: opacity {fadeEnabled ? fadeDuration : 0}ms ease-in-out;"
   >
-    {#if word}
-      <!-- ORP letter is absolutely positioned at center -->
-      <span class="orp">{orpLetter}</span>
-      <!-- Before text positioned to the left of center -->
-      <span class="before-orp">{beforeOrp}</span>
-      <!-- After text positioned to the right of center -->
-      <span class="after-orp">{afterOrp}</span>
+    {#if currentWord}
+      <!-- ORP letter always centered at 50% -->
+      <span class="orp">{focusChar}</span>
+
+      <!-- Content before ORP: prefix of current word + words before -->
+      <span class="before-orp">
+        {#if useMultiMode && wordsBefore.length > 0}
+          <span class="context-words">{wordsBefore.join(' ')}</span>&nbsp;
+        {/if}{wordPrefix}
+      </span>
+
+      <!-- Content after ORP: suffix of current word + words after -->
+      <span class="after-orp">
+        {wordSuffix}{#if useMultiMode && wordsAfter.length > 0}
+          &nbsp;<span class="context-words">{wordsAfter.join(' ')}</span>
+        {/if}
+      </span>
     {:else}
       <span class="placeholder">Ready</span>
     {/if}
@@ -93,6 +117,15 @@
     justify-content: center;
   }
 
+  .word-container.multi-mode {
+    font-size: clamp(2rem, 6vw, 4rem);
+  }
+
+  .context-words {
+    color: #666;
+    font-weight: 400;
+  }
+
   .orp {
     position: absolute;
     left: 50%;
@@ -133,6 +166,10 @@
 
     .marker-line {
       height: 30px;
+    }
+
+    .word-container.multi-mode {
+      font-size: clamp(1.5rem, 5vw, 3rem);
     }
   }
 </style>

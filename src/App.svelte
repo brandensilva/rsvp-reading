@@ -19,8 +19,10 @@
   import Settings from './lib/components/Settings.svelte';
   import TextInput from './lib/components/TextInput.svelte';
   import ProgressBar from './lib/components/ProgressBar.svelte';
+  import { extractWordFrame } from './lib/rsvp-utils.js';
 
   // State
+  let frameWordCount = 1;
   let text = `Rapid serial visual presentation (RSVP) is a scientific method for studying the timing of vision. In RSVP, a sequence of stimuli is shown to an observer at one location in their visual field. This technique has been adapted for speed reading applications, where words are displayed one at a time at a fixed point, eliminating the need for eye movements and potentially increasing reading speed significantly.`;
   let words = [];
   let currentWordIndex = 0;
@@ -52,6 +54,7 @@
 
   // Derived state
   $: currentWord = words[currentWordIndex - 1] || (words.length > 0 ? words[0] : '');
+  $: wordFrame = extractWordFrame(words, Math.max(0, currentWordIndex - 1), frameWordCount);
   $: timeRemaining = formatTimeRemaining(words.length - currentWordIndex, wordsPerMinute);
   $: isFocusMode = isPlaying || isPaused;
 
@@ -186,7 +189,8 @@
         pauseOnPunctuation,
         punctuationPauseMultiplier,
         pauseAfterWords,
-        pauseDuration
+        pauseDuration,
+        frameWordCount
       }
     });
   }
@@ -208,6 +212,7 @@
       punctuationPauseMultiplier = session.settings.punctuationPauseMultiplier ?? punctuationPauseMultiplier;
       pauseAfterWords = session.settings.pauseAfterWords ?? pauseAfterWords;
       pauseDuration = session.settings.pauseDuration ?? pauseDuration;
+      frameWordCount = session.settings.frameWordCount ?? frameWordCount;
     }
 
     showSavedSessionPrompt = false;
@@ -404,6 +409,7 @@
     </div>
   {/if}
 
+
   {#if showSettings && !isFocusMode}
     <div class="panel-overlay">
       <Settings
@@ -414,6 +420,7 @@
         bind:punctuationPauseMultiplier
         bind:pauseAfterWords
         bind:pauseDuration
+        bind:frameWordCount
         on:close={() => showSettings = false}
       />
     </div>
@@ -425,6 +432,7 @@
         <h3>Jump to position</h3>
         <p class="jump-hint">Enter word number (e.g., 150) or percentage (e.g., 50%)</p>
         <form on:submit|preventDefault={() => jumpToWord(jumpToValue)}>
+          <!-- svelte-ignore a11y_autofocus -->
           <input
             type="text"
             bind:value={jumpToValue}
@@ -464,9 +472,12 @@
   <div class="display-area">
     <RSVPDisplay
       word={currentWord}
+      wordGroup={wordFrame.subset}
+      highlightIndex={wordFrame.centerOffset}
       opacity={wordOpacity}
       {fadeDuration}
       {fadeEnabled}
+      multiWordEnabled={frameWordCount > 1}
     />
   </div>
 

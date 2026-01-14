@@ -18,13 +18,38 @@
     const percentage = (x / rect.width) * 100;
     dispatch('seek', { percentage: Math.max(0, Math.min(100, percentage)) });
   }
+
+  function handleKeydown(event) {
+    if (!clickable) return;
+    const step = event.shiftKey ? 10 : 1;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      dispatch('seek', { percentage: Math.max(0, progress - step) });
+    } else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      dispatch('seek', { percentage: Math.min(100, progress + step) });
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      dispatch('seek', { percentage: 0 });
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      dispatch('seek', { percentage: 100 });
+    }
+  }
 </script>
 
 <div class="progress-wrapper" class:minimal>
   <div
     class="progress-container"
     class:clickable
+    role={clickable ? "slider" : undefined}
+    tabindex={clickable ? 0 : undefined}
+    aria-valuenow={clickable ? Math.round(progress) : undefined}
+    aria-valuemin={clickable ? 0 : undefined}
+    aria-valuemax={clickable ? 100 : undefined}
+    aria-label={clickable ? "Reading progress" : undefined}
     on:click={handleClick}
+    on:keydown={handleKeydown}
   >
     <div class="progress-bar" style="width: {progress}%"></div>
   </div>
@@ -56,8 +81,14 @@
     transition: height 0.2s ease;
   }
 
-  .progress-container.clickable:hover {
+  .progress-container.clickable:hover,
+  .progress-container.clickable:focus {
     height: 10px;
+    outline: none;
+  }
+
+  .progress-container.clickable:focus-visible {
+    box-shadow: 0 0 0 2px #ff4444;
   }
 
   .minimal .progress-container {

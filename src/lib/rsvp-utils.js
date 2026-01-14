@@ -132,3 +132,25 @@ export function shouldPauseAtWord(wordIndex, pauseAfterWords) {
   if (wordIndex <= 0) return false
   return wordIndex % pauseAfterWords === 0
 }
+
+/**
+ * Extract a subset of words centered on current position
+ * @param {string[]} allWords - Complete word array
+ * @param {number} centerIdx - Index to center on
+ * @param {number} frameSize - Total words to display (odd numbers recommended)
+ * @returns {{ subset: string[], centerOffset: number }}
+ */
+export function extractWordFrame(allWords, centerIdx, frameSize) {
+  if (frameSize <= 1 || centerIdx >= allWords.length) {
+    return { subset: [allWords[centerIdx] || ''], centerOffset: 0 }
+  }
+
+  const radius = Math.floor(frameSize / 2)
+  const leftBound = Math.max(0, centerIdx - radius)
+  const rightBound = Math.min(allWords.length, centerIdx + radius + 1)
+  
+  const subset = allWords.slice(leftBound, rightBound)
+  const centerOffset = centerIdx - leftBound
+
+  return { subset, centerOffset }
+}

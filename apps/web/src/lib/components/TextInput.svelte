@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { getSupportedExtensions } from '../file-parsers.js';
+  import { getSupportedExtensions } from '@rsvp/core';
 
   export let text = '';
   export let isLoading = false;

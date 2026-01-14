@@ -4,16 +4,14 @@
     parseText as parseTextUtil,
     getWordDelay as getWordDelayUtil,
     formatTimeRemaining,
-    shouldPauseAtWord
-  } from './lib/rsvp-utils.js';
-  import { parseFile } from './lib/file-parsers.js';
-  import {
+    shouldPauseAtWord,
+    parseFile,
     saveSession,
     loadSession,
     clearSession,
     hasSession,
     getSessionSummary
-  } from './lib/progress-storage.js';
+  } from '@rsvp/core';
   import RSVPDisplay from './lib/components/RSVPDisplay.svelte';
   import Controls from './lib/components/Controls.svelte';
   import Settings from './lib/components/Settings.svelte';

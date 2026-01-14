@@ -4,10 +4,10 @@
 
 /**
  * Parse a PDF file and extract its text content
- * @param {File} file - The PDF file to parse
- * @returns {Promise<string>} The extracted text
+ * @param file - The PDF file to parse
+ * @returns The extracted text
  */
-export async function parsePDF(file) {
+export async function parsePDF(file: File): Promise<string> {
   const pdfjsLib = await import('pdfjs-dist')
 
   // Set up the worker - use unpkg which mirrors npm directly
@@ -23,7 +23,7 @@ export async function parsePDF(file) {
     const textContent = await page.getTextContent()
     const pageText = textContent.items
       .filter(item => 'str' in item)
-      .map(item => /** @type {{ str: string }} */ (item).str)
+      .map(item => (item as { str: string }).str)
       .join(' ')
     fullText += pageText + ' '
   }
@@ -32,16 +32,35 @@ export async function parsePDF(file) {
   return cleanText(fullText)
 }
 
+interface SpineItem {
+  href?: string
+  url?: string
+}
+
+interface EpubSpine {
+  spineItems?: SpineItem[]
+  items?: SpineItem[]
+}
+
+interface EpubBook {
+  ready: Promise<void>
+  loaded: {
+    spine: Promise<void>
+  }
+  spine?: EpubSpine
+  load(href: string): Promise<Document | string | null>
+}
+
 /**
  * Parse an EPUB file and extract its text content
- * @param {File} file - The EPUB file to parse
- * @returns {Promise<string>} The extracted text
+ * @param file - The EPUB file to parse
+ * @returns The extracted text
  */
-export async function parseEPUB(file) {
+export async function parseEPUB(file: File): Promise<string> {
   const ePub = (await import('epubjs')).default
 
   const arrayBuffer = await file.arrayBuffer()
-  const book = ePub(arrayBuffer)
+  const book = ePub(arrayBuffer) as unknown as EpubBook
 
   await book.ready
   await book.loaded.spine
@@ -64,9 +83,9 @@ export async function parseEPUB(file) {
         if (typeof contents === 'string') {
           const doc = new DOMParser().parseFromString(contents, 'text/html')
           text = doc.body?.textContent || ''
-        } else if (contents.body) {
+        } else if ('body' in contents && contents.body) {
           text = contents.body.textContent || ''
-        } else if (contents.documentElement) {
+        } else if ('documentElement' in contents && contents.documentElement) {
           text = contents.documentElement.textContent || ''
         }
         fullText += text + ' '
@@ -82,10 +101,10 @@ export async function parseEPUB(file) {
 
 /**
  * Clean and normalize extracted text
- * @param {string} text - The raw text to clean
- * @returns {string} Cleaned text
+ * @param text - The raw text to clean
+ * @returns Cleaned text
  */
-function cleanText(text) {
+function cleanText(text: string): string {
   return text
     // Replace multiple spaces/newlines with single space
     .replace(/\s+/g, ' ')
@@ -97,10 +116,10 @@ function cleanText(text) {
 
 /**
  * Detect file type and parse accordingly
- * @param {File} file - The file to parse
- * @returns {Promise<string>} The extracted text
+ * @param file - The file to parse
+ * @returns The extracted text
  */
-export async function parseFile(file) {
+export async function parseFile(file: File): Promise<string> {
   const fileName = file.name.toLowerCase()
 
   if (fileName.endsWith('.pdf')) {
@@ -114,8 +133,8 @@ export async function parseFile(file) {
 
 /**
  * Get supported file extensions
- * @returns {string} Comma-separated list of supported extensions
+ * @returns Comma-separated list of supported extensions
  */
-export function getSupportedExtensions() {
+export function getSupportedExtensions(): string {
   return '.pdf,.epub'
 }

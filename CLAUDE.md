@@ -12,6 +12,9 @@ pnpm install          # Install all dependencies
 pnpm build            # Build all packages
 pnpm dev              # Run dev server for all apps
 pnpm dev:web          # Run dev server for web app only (http://localhost:5173)
+pnpm dev:desktop      # Run desktop app in dev mode
+pnpm dist:desktop     # Build desktop app DMG for distribution
+pnpm dist:desktop:dir # Build desktop app without packaging (faster for testing)
 pnpm test             # Run tests in watch mode
 pnpm test:run         # Run tests once
 
@@ -19,6 +22,9 @@ pnpm test:run         # Run tests once
 cd packages/core && pnpm build       # Build core package
 cd packages/core && pnpm test:run    # Run core tests
 cd apps/web && pnpm dev              # Run web dev server
+
+# Docker (web app only)
+cd docker && docker-compose up --build   # Build and run web app in container
 ```
 
 ## Monorepo Structure
@@ -32,11 +38,21 @@ rsvp-reading/
 │   │   │   ├── App.svelte      # Main orchestrator
 │   │   │   ├── app.css
 │   │   │   └── main.js
+│   │   ├── public/             # Static assets (PWA icons, manifest)
 │   │   ├── index.html
 │   │   ├── package.json
-│   │   └── vite.config.js
-│   └── desktop/                # @rsvp/desktop - Electron (placeholder)
-│       └── package.json
+│   │   ├── vite.config.js
+│   │   └── tsconfig.json
+│   └── desktop/                # @rsvp/desktop - Electron macOS app
+│       ├── electron/
+│       │   ├── main.js         # Electron main process
+│       │   ├── menu.js         # Native menu bar
+│       │   └── preload.js      # Context bridge for IPC
+│       ├── src/                # Renderer (same Svelte app as web)
+│       ├── build/              # App icon for distribution
+│       ├── package.json
+│       ├── electron.vite.config.js
+│       └── tsconfig.json
 ├── packages/
 │   └── core/                   # @rsvp/core - Shared utilities (TypeScript)
 │       ├── src/
@@ -45,7 +61,12 @@ rsvp-reading/
 │       │   ├── file-parsers.ts
 │       │   └── progress-storage.ts
 │       ├── tests/
-│       └── package.json
+│       ├── package.json
+│       └── tsconfig.json
+├── docker/                     # Docker deployment for web app
+│   ├── Dockerfile
+│   ├── docker-compose.yml
+│   └── nginx.conf
 ├── pnpm-workspace.yaml
 ├── turbo.json
 ├── package.json
@@ -81,13 +102,24 @@ Svelte 5 web application:
 - `lib/components/TextInput.svelte` - File upload and text paste panel
 - `lib/components/ProgressBar.svelte` - Clickable progress bar with seek
 
+### App: @rsvp/desktop
+
+Electron desktop application (macOS):
+- `electron/main.js` - Window creation, IPC handlers, file dialogs
+- `electron/menu.js` - Native menu bar with File/Edit/View/Window menus
+- `electron/preload.js` - Secure context bridge exposing `window.electronAPI`
+- Shares the same Svelte UI as web app via `@rsvp/core`
+- Supports native file associations for PDF/EPUB
+- Uses `electron-vite` for build tooling and `electron-builder` for distribution
+
 ### Key Patterns
 
 - **Focus mode**: During playback, UI minimizes to reduce distractions
 - **Keyboard-first**: Space (play/pause), arrows (speed/navigation), G (jump), Ctrl+S (save)
-- **PDF worker**: Loaded from unpkg CDN, not bundled locally
+- **PDF worker**: Bundled locally via vite-plugin-static-copy for offline support
 - **Dark theme**: Black background with red (#ff4444) ORP highlights
 - **Shared code**: Core utilities imported via `@rsvp/core` workspace package
+- **Platform detection**: `isElectron()` helper enables native features when running in desktop app
 
 ### Test Files
 

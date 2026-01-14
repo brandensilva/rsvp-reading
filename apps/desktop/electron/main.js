@@ -1,7 +1,11 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join } from 'path'
+import { app, BrowserWindow, ipcMain, dialog, nativeImage } from 'electron'
+import { join, dirname } from 'path'
 import { readFile } from 'fs/promises'
+import { fileURLToPath } from 'url'
 import { createMenu } from './menu.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirnameESM = dirname(__filename)
 
 // Handle file opened from Finder/dock before app is ready
 let pendingFilePath = null
@@ -19,7 +23,7 @@ function createWindow() {
     trafficLightPosition: { x: 16, y: 16 },
     backgroundColor: '#000000',
     webPreferences: {
-      preload: join(__dirname, '../preload/preload.js'),
+      preload: join(__dirname, '../preload/preload.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false
@@ -30,7 +34,6 @@ function createWindow() {
   // electron-vite sets ELECTRON_RENDERER_URL in dev mode
   if (process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
-    mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
@@ -75,7 +78,19 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  // Set dock icon in dev mode (production uses embedded icon from electron-builder)
+  if (process.platform === 'darwin' && process.env.ELECTRON_RENDERER_URL) {
+    // From out/main/ -> ../../build/icon.png
+    const iconPath = join(__dirnameESM, '../../build/icon.png')
+    const icon = nativeImage.createFromPath(iconPath)
+    if (!icon.isEmpty()) {
+      app.dock.setIcon(icon)
+    }
+  }
+
+  createWindow()
+})
 
 // IPC Handlers
 

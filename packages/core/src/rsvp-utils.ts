@@ -37,6 +37,7 @@ const unicodeLetterRegex = /\p{L}/u
  */
 export function getORPIndex(word: string | null | undefined): number {
   if (!word || typeof word !== 'string') return 0
+  // Use Unicode letter category to support all languages
   const len = word.replace(/[^\p{L}]/gu, '').length
   if (len <= 1) return 0
   if (len <= 3) return 0
@@ -168,7 +169,7 @@ export function shouldPauseAtWord(wordIndex: number, pauseAfterWords: number): b
  * @param allWords - Complete word array
  * @param centerIdx - Index to center on
  * @param frameSize - Total words to display (odd numbers recommended)
- * @returns Object with subset array and center offset
+ * @returns Word frame with subset and center offset
  */
 export function extractWordFrame(allWords: string[], centerIdx: number, frameSize: number): WordFrame {
   if (frameSize <= 1 || centerIdx >= allWords.length) {

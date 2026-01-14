@@ -20,13 +20,13 @@ importers:
       '@rsvp/core':
         specifier: workspace:*
         version: link:../../packages/core
-      electron:
-        specifier: ^39.2.7
-        version: 39.2.7
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^6.2.1
         version: 6.2.4(svelte@5.46.3)(vite@7.3.1(@types/node@22.19.6)(jiti@2.6.1))
+      electron:
+        specifier: ^39.2.7
+        version: 39.2.7
       electron-builder:
         specifier: ^26.4.0
         version: 26.4.0(electron-builder-squirrel-windows@26.4.0)

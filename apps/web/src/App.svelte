@@ -5,6 +5,7 @@
     getWordDelay as getWordDelayUtil,
     formatTimeRemaining,
     shouldPauseAtWord,
+    extractWordFrame,
     parseFile,
     saveSession,
     loadSession,
@@ -21,7 +22,6 @@
   import Settings from './lib/components/Settings.svelte';
   import TextInput from './lib/components/TextInput.svelte';
   import ProgressBar from './lib/components/ProgressBar.svelte';
-  import { extractWordFrame } from './lib/rsvp-utils.js';
 
   // State
   let frameWordCount = 1;
@@ -453,9 +453,12 @@
 </script>
 
 <main class:focus-mode={isFocusMode}>
+  <!-- Titlebar drag region for Electron (always visible for window dragging) -->
+  <div class="titlebar-drag-region"></div>
+
   <!-- Header - hidden during focus mode -->
   {#if !isFocusMode}
-    <header>
+    <header class="app-header">
       <h1>RSVP Reader</h1>
       <div class="header-actions">
         <button
@@ -972,5 +975,34 @@
   .icon-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+
+  /* Electron titlebar drag region for window movement */
+  .titlebar-drag-region {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 38px;
+    -webkit-app-region: drag;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Header should also be draggable but buttons should not */
+  .app-header {
+    -webkit-app-region: drag;
+  }
+
+  .app-header h1 {
+    -webkit-app-region: drag;
+  }
+
+  .header-actions {
+    -webkit-app-region: no-drag;
+  }
+
+  .icon-btn {
+    -webkit-app-region: no-drag;
   }
 </style>

@@ -7,10 +7,11 @@
     "dev:web": "turbo run dev --filter=@rsvp/web",
     "dev:desktop": "turbo run dev --filter=@rsvp/desktop",
     "build": "turbo run build",
-    "test": "turbo run test",
-    "test:run": "turbo run test:run",
+    "build:desktop": "turbo run build --filter=@rsvp/desktop",
     "dist:desktop": "pnpm --filter @rsvp/desktop dist",
-    "dist:desktop:dir": "pnpm --filter @rsvp/desktop dist:dir"
+    "dist:desktop:dir": "pnpm --filter @rsvp/desktop dist:dir",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
